@@ -32,7 +32,7 @@ We will review submissions on a rolling basis.
 
 | Rank | Name            | Overlap     | Wirelength (um) | Runtime (s) | Notes                |
 |------|-----------------|-------------|-----------------|-------------|----------------------|
-| 1    | Brayden Rudisill      | 0.0000      | 0.2686          | 49.79       |  Timed on a mac air |
+| 1    | Brayden Rudisill      | 0.0000      | 0.2611          | 50.51       |  Timed on a mac air |
 | 2    | Leison Gao      | 0.0000      | 0.2796          | 50.14s      |                      |
 | 3    | Ashmit Dutta    | 0.0000      | 0.2870          | 995.58      |  Spent my entire morning (12 am - 6 am) doing this :P       |
 | 4    | Aleksey  Valouev| 0.0000      | 0.3577          | 118.98      |                      |

@@ -32,17 +32,20 @@ We will review submissions on a rolling basis.
 
 | Rank | Name            | Overlap     | Wirelength (um) | Runtime (s) | Notes                |
 |------|-----------------|-------------|-----------------|-------------|----------------------|
-| 1    | Brayden Rudisill      | 0.0000      | 0.2611          | 50.51       |  Timed on a mac air |
+| 1    | Brayden Rudisill  | 0.0000      | 0.2611          | 50.51       |  Timed on a mac air |
 | 2    | Leison Gao      | 0.0000      | 0.2796          | 50.14s      |                      |
-| 3    | Ashmit Dutta    | 0.0000      | 0.2870          | 995.58      |  Spent my entire morning (12 am - 6 am) doing this :P       |
-| 4    | Aleksey  Valouev| 0.0000      | 0.3577          | 118.98      |                      |
-| 5    | Mohul Shukla    | 0.0000      | 0.5048          | 54.60s      |                      |
-| 6    | Ryan Hulke      | 0.0000      | 0.5226          | 166.24      |                      |
-| 7    | Neel  Shah      | 0.0000      | 0.5445          | 45.40       |  Zero overlaps on all tests, adaptive schedule + early stop |
-| 8    | Akash Pai       | 0.0006      | 0.4933          | 326.25s     |                      |
-| 9    | Prithvi Seran   | 0.0499      | 0.4890          | 398.58      |                      |
-| 10    | partcl example  | 0.8         | 0.4             | 5           | example              |
-| 11    | Add Yours!      |             |                 |             |                      |
+| 3    | William Pan     | 0.0000      | 0.2848          | 155.33s     |                      |
+| 4    | Ashmit Dutta    | 0.0000      | 0.2870          | 995.58      |  Spent my entire morning (12 am - 6 am) doing this :P       |
+| 5    | Gabriel Del Monte  | 0.0000      | 0.3427          | 606.07      |                                                              |
+| 6    | Aleksey  Valouev| 0.0000      | 0.3577          | 118.98      |                      |
+| 7    | Mohul Shukla    | 0.0000      | 0.5048          | 54.60s      |                      |
+| 8    | Ryan Hulke      | 0.0000      | 0.5226          | 166.24      |                      |
+| 9    | Neel  Shah      | 0.0000      | 0.5445          | 45.40       |  Zero overlaps on all tests, adaptive schedule + early stop |
+| 10    | Akash Pai       | 0.0006      | 0.4933          | 326.25s     |                      |
+| 11    | Sean Ko         | 0.0271      |  .5138          | 31.83s      | lr increase, decrease epoch, increase lambda overlap and decreased lambda wire_length + log penalty loss |  
+| 12    | Prithvi Seran   | 0.0499      | 0.4890          | 398.58      |                      |
+| 13    | partcl example  | 0.8         | 0.4             | 5           | example              |
+| 14    | Add Yours!      |             |                 |             |                      |
 
 > **To add your results:**  
 > Insert a new row in the table above with your name, overlap, wirelength, and any notes. Ensure you sort by overlap.

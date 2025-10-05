@@ -38,14 +38,15 @@ We will review submissions on a rolling basis.
 | 4    | Ashmit Dutta    | 0.0000      | 0.2870          | 995.58      |  Spent my entire morning (12 am - 6 am) doing this :P       |
 | 5    | Gabriel Del Monte  | 0.0000      | 0.3427          | 606.07      |                                                              |
 | 6    | Aleksey  Valouev| 0.0000      | 0.3577          | 118.98      |                      |
-| 7    | Mohul Shukla    | 0.0000      | 0.5048          | 54.60s      |                      |
-| 8    | Ryan Hulke      | 0.0000      | 0.5226          | 166.24      |                      |
-| 9    | Neel  Shah      | 0.0000      | 0.5445          | 45.40       |  Zero overlaps on all tests, adaptive schedule + early stop |
-| 10    | Akash Pai       | 0.0006      | 0.4933          | 326.25s     |                      |
-| 11    | Sean Ko         | 0.0271      |  .5138          | 31.83s      | lr increase, decrease epoch, increase lambda overlap and decreased lambda wire_length + log penalty loss |  
-| 12    | Prithvi Seran   | 0.0499      | 0.4890          | 398.58      |                      |
-| 13    | partcl example  | 0.8         | 0.4             | 5           | example              |
-| 14    | Add Yours!      |             |                 |             |                      |
+| 7    | Shashank Shriram| 0.0000      | 0.4634          |   7.08      | 🏎️                    |         
+| 8    | Mohul Shukla    | 0.0000      | 0.5048          | 54.60s      |                      |
+| 9    | Ryan Hulke      | 0.0000      | 0.5226          | 166.24      |                      |
+| 10    | Neel  Shah      | 0.0000      | 0.5445          | 45.40       |  Zero overlaps on all tests, adaptive schedule + early stop |
+| 11    | Akash Pai       | 0.0006      | 0.4933          | 326.25s     |                      |
+| 12    | Sean Ko         | 0.0271      |  .5138          | 31.83s      | lr increase, decrease epoch, increase lambda overlap and decreased lambda wire_length + log penalty loss |  
+| 13    | Prithvi Seran   | 0.0499      | 0.4890          | 398.58      |                      |
+| 14    | partcl example  | 0.8         | 0.4             | 5           | example              |
+| 15    | Add Yours!      |             |                 |             |                      |
 
 > **To add your results:**  
 > Insert a new row in the table above with your name, overlap, wirelength, and any notes. Ensure you sort by overlap.

@@ -1,15 +1,17 @@
 
 import os
 import optuna
+from sklearn import metrics
 import torch
 from placement import generate_placement_input, train_placement, calculate_normalized_metrics
+import numpy as np
 
 def objective(trial):
     # Sample hyperparameters
-    lr = trial.suggest_loguniform('lr', 1e-4, 1e-1)
+    lr = trial.suggest_loguniform('lr', 1e-6, 1)
     lambda_wirelength = trial.suggest_loguniform('lambda_wirelength', 0.1, 100.0)
-    lambda_overlap = trial.suggest_loguniform('lambda_overlap', .01, 100.0)
-    num_epochs = 5000
+    lambda_overlap = trial.suggest_loguniform('lambda_overlap', .01, 500.0)
+    num_epochs = 500
 
     # Fix random seed for reproducibility
     torch.manual_seed(42)
@@ -41,13 +43,32 @@ def objective(trial):
     # Optuna will collect Pareto-optimal trials when study is created with two 'minimize' directions
     trial.set_user_attr('overlap_ratio', metrics['overlap_ratio'])
     trial.set_user_attr('normalized_wl', metrics['normalized_wl'])
-    return metrics['overlap_ratio'], metrics['normalized_wl']
+
+    # At the end of your function, replace the return statement with:
+    x = metrics['overlap_ratio']
+    y = metrics['normalized_wl']
+
+    # Apply exponential penalty for x (since x=1 is common, heavily penalize high values)
+    alpha_x = 1#5.0  # overall weight for x penalty
+    beta_x = 1#8.0   # steepness of exponential
+    theta_x = 0  # threshold where penalty starts increasing rapidly
+
+    penalized_x = alpha_x * np.exp(beta_x * (x - theta_x))
+
+    # Apply polynomial penalty for y (since y rarely < 0.3, penalize higher values)
+    gamma_y = 1#3.0  # weight for y penalty
+    p = 2          # polynomial degree
+
+    penalized_y = gamma_y * (y - 0.2)**p
+
+    return penalized_x + penalized_y
+
 
 if __name__ == '__main__':
     # Allow quick local runs by setting OPTUNA_TRIALS environment variable
     #n_trials = int(os.environ.get('OPTUNA_TRIALS', '1000'))
-    study = optuna.create_study(directions=['minimize', 'minimize'])
-    study.optimize(objective, n_trials=100, n_jobs=-1)
+    study = optuna.create_study(directions=['minimize'])
+    study.optimize(objective, n_trials=1000, n_jobs=-1)
 
     # For multi-objective studies there is no single "best" trial — study.best_trials
     # returns the Pareto front (non-dominated trials). We'll print the Pareto front

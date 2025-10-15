@@ -44,6 +44,7 @@ import time
 
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
 
 
 # Feature index enums for cleaner code access
@@ -437,6 +438,32 @@ def train_placement(
     # Create optimizer
     optimizer = optim.Adam([cell_positions], lr=lr)
 
+    # Setup learning rate scheduler: Linear warmup -> Cosine annealing
+    # Protect against extremely small num_epochs
+    try:
+        warmup_epochs = max(1, int(0.05 * num_epochs)) if num_epochs > 1 else 1
+        remaining_epochs = max(1, num_epochs - warmup_epochs)
+
+        scheduler1 = LinearLR(
+            optimizer,
+            start_factor=0.1,
+            end_factor=1.0,
+            total_iters=warmup_epochs,
+        )
+
+        scheduler2 = CosineAnnealingLR(
+            optimizer,
+            T_max=remaining_epochs,
+            eta_min=1e-3 * lr,
+        )
+
+        scheduler = SequentialLR(
+            optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_epochs]
+        )
+    except Exception:
+        # Fallback: No scheduler if something goes wrong
+        scheduler = None
+
     # Track loss history
     loss_history = {
         "total_loss": [],
@@ -447,6 +474,10 @@ def train_placement(
     # Training loop
     for epoch in range(num_epochs):
         optimizer.zero_grad()
+
+        progress = epoch / (num_epochs - 1) # a value from 0.0 to 1.0
+        multiplier = (lambda_overlap / lambda_wirelength) ** progress
+        l = lambda_wirelength * multiplier
 
         # Create cell_features with current positions
         cell_features_current = cell_features.clone()
@@ -461,7 +492,7 @@ def train_placement(
         )
 
         # Combined loss
-        total_loss = lambda_wirelength * wl_loss + lambda_overlap * overlap_loss
+        total_loss = wl_loss + l * overlap_loss
 
         # Backward pass
         total_loss.backward()
@@ -471,6 +502,15 @@ def train_placement(
 
         # Update positions
         optimizer.step()
+
+        # Step scheduler each epoch (after optimizer.step)
+        if scheduler is not None:
+            # SequentialLR expects step() called once per epoch
+            try:
+                scheduler.step()
+            except Exception:
+                # If scheduler errors, disable it for remaining epochs
+                scheduler = None
 
         # Record losses
         loss_history["total_loss"].append(total_loss.item())
@@ -796,11 +836,12 @@ def main():
         cell_features,
         pin_features,
         edge_list,
-        num_epochs=50000,
-        
-        lr=0.02,
+        num_epochs=1000,
+        lambda_wirelength=.159,
+        lambda_overlap=117,
+        lr=.997,
         verbose=True,
-        log_interval=1000,
+        log_interval=100,
     )
     end_time = time.time() - start_time
 

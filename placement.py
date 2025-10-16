@@ -40,9 +40,11 @@ BONUS CHALLENGES:
 
 import os
 from enum import IntEnum
+import time
 
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
 
 
 # Feature index enums for cleaner code access
@@ -347,17 +349,52 @@ def overlap_repulsion_loss(cell_features, pin_features, edge_list):
     if N <= 1:
         return torch.tensor(0.0, requires_grad=True)
 
-    # TODO: Implement overlap detection and loss calculation here
-    #
-    # Your implementation should:
-    # 1. Extract cell positions, widths, and heights
-    # 2. Compute pairwise overlaps using vectorized operations
-    # 3. Return a scalar loss that is zero when no overlaps exist
-    #
-    # Delete this placeholder and add your implementation:
-
-    # Placeholder - returns a constant loss (REPLACE THIS!)
-    return torch.tensor(1.0, requires_grad=True)
+    # Step 1: Extract cell positions, widths, and heights
+    positions = cell_features[:, 2:4]  # [N, 2] - x, y positions
+    widths = cell_features[:, 4]      # [N] - widths
+    heights = cell_features[:, 5]     # [N] - heights
+    
+    # Step 2: Compute all pairwise distances using broadcasting
+    positions_i = positions.unsqueeze(1)  # [N, 1, 2]
+    positions_j = positions.unsqueeze(0)  # [1, N, 2]
+    
+    # Calculate absolute distances between all pairs
+    distances = positions_i - positions_j  # [N, N, 2]
+    abs_distances_x = torch.abs(distances[:, :, 0])  # [N, N] - x distances
+    abs_distances_y = torch.abs(distances[:, :, 1])  # [N, N] - y distances
+    
+    # Step 3: Calculate minimum separation distances for each pair
+    widths_i = widths.unsqueeze(1)   # [N, 1]
+    widths_j = widths.unsqueeze(0)   # [1, N]
+    heights_i = heights.unsqueeze(1) # [N, 1]
+    heights_j = heights.unsqueeze(0) # [1, N]
+    
+    # Minimum separation for non-overlap: (w1 + w2) / 2 and (h1 + h2) / 2
+    min_sep_x = (widths_i + widths_j) / 2   # [N, N]
+    min_sep_y = (heights_i + heights_j) / 2 # [N, N]
+    
+    # Step 4: Use relu to get positive overlap amounts
+    # If distance < min_separation, then overlap = min_separation - distance
+    overlap_x = torch.relu(min_sep_x - abs_distances_x)  # [N, N]
+    overlap_y = torch.relu(min_sep_y - abs_distances_y)  # [N, N]
+    
+    # Step 5: Multiply overlaps in x and y to get overlap areas
+    # Overlap only occurs when BOTH x and y overlap
+    overlap_areas = overlap_x * overlap_y  # [N, N]
+    
+    # Step 6: Mask to only consider upper triangle (i < j) to avoid double counting
+    # Create upper triangular mask (excluding diagonal)
+    mask = torch.triu(torch.ones(N, N, device=overlap_areas.device), diagonal=1)
+    overlap_areas = overlap_areas * mask
+    
+    # Step 7: Sum and normalize
+    total_overlap = torch.sum(overlap_areas)
+    
+    # Normalize by total number of pairs to make loss scale-invariant
+    num_pairs = N * (N - 1) / 2
+    normalized_loss = total_overlap / num_pairs if num_pairs > 0 else total_overlap
+    
+    return normalized_loss
 
 
 def train_placement(
@@ -401,6 +438,32 @@ def train_placement(
     # Create optimizer
     optimizer = optim.Adam([cell_positions], lr=lr)
 
+    # Setup learning rate scheduler: Linear warmup -> Cosine annealing
+    # Protect against extremely small num_epochs
+    try:
+        warmup_epochs = max(1, int(0.05 * num_epochs)) if num_epochs > 1 else 1
+        remaining_epochs = max(1, num_epochs - warmup_epochs)
+
+        scheduler1 = LinearLR(
+            optimizer,
+            start_factor=0.1,
+            end_factor=1.0,
+            total_iters=warmup_epochs,
+        )
+
+        scheduler2 = CosineAnnealingLR(
+            optimizer,
+            T_max=remaining_epochs,
+            eta_min=1e-3 * lr,
+        )
+
+        scheduler = SequentialLR(
+            optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_epochs]
+        )
+    except Exception:
+        # Fallback: No scheduler if something goes wrong
+        scheduler = None
+
     # Track loss history
     loss_history = {
         "total_loss": [],
@@ -411,6 +474,10 @@ def train_placement(
     # Training loop
     for epoch in range(num_epochs):
         optimizer.zero_grad()
+
+        progress = epoch / (num_epochs - 1) # a value from 0.0 to 1.0
+        multiplier = (lambda_overlap / lambda_wirelength) ** progress
+        l = lambda_wirelength * multiplier
 
         # Create cell_features with current positions
         cell_features_current = cell_features.clone()
@@ -425,7 +492,7 @@ def train_placement(
         )
 
         # Combined loss
-        total_loss = lambda_wirelength * wl_loss + lambda_overlap * overlap_loss
+        total_loss = wl_loss + l * overlap_loss
 
         # Backward pass
         total_loss.backward()
@@ -435,6 +502,15 @@ def train_placement(
 
         # Update positions
         optimizer.step()
+
+        # Step scheduler each epoch (after optimizer.step)
+        if scheduler is not None:
+            # SequentialLR expects step() called once per epoch
+            try:
+                scheduler.step()
+            except Exception:
+                # If scheduler errors, disable it for remaining epochs
+                scheduler = None
 
         # Record losses
         loss_history["total_loss"].append(total_loss.item())
@@ -754,13 +830,20 @@ def main():
     print("RUNNING OPTIMIZATION")
     print("=" * 70)
 
+    start_time = time.time()
+
     result = train_placement(
         cell_features,
         pin_features,
         edge_list,
-        verbose=True,
-        log_interval=200,
+        num_epochs=500,
+        lambda_wirelength=.159,
+        lambda_overlap=117,
+        lr=.997,
+        verbose=False,
+        log_interval=100,
     )
+    end_time = time.time() - start_time
 
     # Calculate final metrics (both detailed and normalized)
     print("\n" + "=" * 70)
@@ -785,6 +868,7 @@ def main():
     print(f"Overlap Ratio: {normalized_metrics['overlap_ratio']:.4f} "
           f"({normalized_metrics['num_cells_with_overlaps']}/{normalized_metrics['total_cells']} cells)")
     print(f"Normalized Wirelength: {normalized_metrics['normalized_wl']:.4f}")
+    print("Time taken: {:.2f} seconds".format(end_time))
 
     # Success check
     print("\n" + "=" * 70)

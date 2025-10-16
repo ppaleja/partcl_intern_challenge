@@ -836,11 +836,11 @@ def main():
         cell_features,
         pin_features,
         edge_list,
-        num_epochs=1000,
+        num_epochs=500,
         lambda_wirelength=.159,
         lambda_overlap=117,
         lr=.997,
-        verbose=True,
+        verbose=False,
         log_interval=100,
     )
     end_time = time.time() - start_time
